@@ -19,9 +19,9 @@ import re
 
 
 parser = argparse.ArgumentParser()
-parser.add_argument('--env_name', type=str, default='Ant-v5', help='name of the environment to run')
+parser.add_argument('--env_name', type=str, default='Hopper-v4', help='name of the environment to run')
 parser.add_argument('--manual_seed', type=int, default=1, help='manual seed for reproducibility')
-parser.add_argument('--episodes', type=int, default=1500, help='number of episodes to run')
+parser.add_argument('--episodes', type=int, default=500, help='number of episodes to run')
 parser.add_argument('--batch_size', type=int, default=256, help='batch size for training')
 parser.add_argument('--gamma', type=float, default=0.99, help='discount factor')
 parser.add_argument('--learning_rate_actor', type=float, default=1e-5, help='learning rate for the actor network')
@@ -31,7 +31,7 @@ parser.add_argument('--buffer_size', type=int, default=10000, help='capacity of 
 parser.add_argument('--tau', type=float, default=0.005, help='smoothing coefficient for target network updates')
 parser.add_argument('--exploration_noise', type=float, default=0.1, help='noise level during exploration')
 
-parser.add_argument('--LLM_name', type=str, default='gpt-4o-2024-08-06', help='name of the LLM')
+parser.add_argument('--LLM_name', type=str, default='deepseek-chat', help='name of the LLM')
 parser.add_argument('--LLM_temperature', type=float, default=0.0, help='temperature of the LLM')
 parser.add_argument('--adjust_frequency', type=int, default=1, help='adjust frequency of the LLM')
 parser.add_argument('--sample_rate', type=int, default=100, help='sample rate of the LLM')
@@ -71,14 +71,17 @@ def set_cpu_num(cpu_num):
     torch.set_num_threads(cpu_num)
 
 set_cpu_num(args.cpu_num)
-
+API_KEY = os.getenv("DEEPSEEK_API_KEY_GUGA")
 if 'gpt' in LLM_name:
-    API_KEY = YOUR_API_KEY
     client = OpenAI(api_key=API_KEY, )
 
 elif 'Llama' in LLM_name:
-    API_KEY = YOUR_API_KEY
     client = OpenAI(api_key=API_KEY, base_url="https://api.deepinfra.com/v1/openai", )
+
+elif 'deepseek' in LLM_name:
+    client = OpenAI(
+        api_key=API_KEY, base_url="https://api.deepseek.com/v1"
+    )
 
 if prompt_type == 'full':
     from prompt import env_describe_full as env_describe
@@ -157,7 +160,7 @@ class DDPGAgent:
         self.model_dir = f'DDPG_{LLM_name}_adjust{adjust_frequency}_sample{sample_rate}_{prompt_type}_temperature{LLM_temperature}_seed{manual_seed}_{self.time_data}'
         os.makedirs(os.path.join(self.game_dir, self.model_dir), exist_ok=True)
 
-        os.system(f'cp {__file__} ' + os.path.join(self.game_dir, self.model_dir, f'{os.path.basename(__file__)}'))
+        #os.system(f'cp {__file__} ' + os.path.join(self.game_dir, self.model_dir, f'{os.path.basename(__file__)}'))
 
     def select_action(self, state):
         state = torch.FloatTensor(state.reshape(1, -1)).to(device)
@@ -241,9 +244,12 @@ for episode in tqdm(range(args.episodes)):
                 description = completion.choices[0].message.content
 
                 usage_stage1=completion.usage
-                output_tokens_stage1=usage_stage1.completion_tokens
-                prompt_tokens_stage1=usage_stage1.prompt_tokens
-                total_tokens_stage1=usage_stage1.total_tokens
+                #output_tokens_stage1=usage_stage1.completion_tokens
+                #prompt_tokens_stage1=usage_stage1.prompt_tokens
+                #total_tokens_stage1=usage_stage1.total_tokens
+                prompt_tokens = getattr(usage_stage1, "prompt_tokens", 0)
+                completion_tokens = getattr(usage_stage1, "completion_tokens", 0)
+                total_tokens = getattr(usage_stage1, "total_tokens", 0)
             except:
                 description = None
                 bias_llm = None

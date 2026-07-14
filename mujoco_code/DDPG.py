@@ -16,9 +16,9 @@ import json
 
 
 parser = argparse.ArgumentParser()
-parser.add_argument('--env_name', type=str, default='Ant-v5', help='name of the environment to run')
+parser.add_argument('--env_name', type=str, default='Hopper-v4', help='name of the environment to run')
 parser.add_argument('--manual_seed', type=int, default=1, help='manual seed for reproducibility')
-parser.add_argument('--episodes', type=int, default=1500, help='number of episodes to run')
+parser.add_argument('--episodes', type=int, default=500, help='number of episodes to run')
 parser.add_argument('--batch_size', type=int, default=256, help='batch size for training')
 parser.add_argument('--gamma', type=float, default=0.99, help='discount factor')
 parser.add_argument('--learning_rate_actor', type=float, default=1e-5, help='learning rate for the actor network')
@@ -42,7 +42,14 @@ torch.manual_seed(manual_seed)
 if device == 'cuda':
     torch.cuda.manual_seed(manual_seed)
 np.random.seed(manual_seed)
-print('manual_seed=', manual_seed)
+print(f"Manual seed: {manual_seed}")
+print(f"Running device: {device}")
+
+if device.type == 'cuda':
+    print(f"GPU: {torch.cuda.get_device_name(0)}")
+    print(f"CUDA version: {torch.version.cuda}")
+else:
+    print("Using CPU for training.")
 
 def set_cpu_num(cpu_num):
     if cpu_num <= 0: return
@@ -120,10 +127,10 @@ class DDPGAgent:
 
         self.game_dir = os.path.join('..', args.save_folder, env_name)
         self.time_data = time.strftime('%Y-%m-%d_%H-%M', time.localtime())
-        self.model_dir = f'DDPG_seed{manual_seed}_{self.time_data}'
+        self.model_dir = f'DDPG_seed{manual_seed}'
         os.makedirs(os.path.join(self.game_dir, self.model_dir), exist_ok=True)
 
-        os.system(f'cp {__file__} ' + os.path.join(self.game_dir, self.model_dir, f'{os.path.basename(__file__)}'))
+        # os.system(f'cp {__file__} ' + os.path.join(self.game_dir, self.model_dir, f'{os.path.basename(__file__)}'))
 
     def select_action(self, state):
         state = torch.FloatTensor(state.reshape(1, -1)).to(device)

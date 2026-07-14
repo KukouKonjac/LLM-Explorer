@@ -1,0 +1,25 @@
+# PyCharm
+.idea/
+
+# Python
+__pycache__/
+*.pyc
+
+# Reinforcement Learning Results
+/DDPG/
+/TD3/
+/SAC/
+/PPO/
+
+# Models
+*.pth
+
+# Data
+*.npy
+
+# Figures
+*.png
+*.pdf
+
+# Logs
+*.log
